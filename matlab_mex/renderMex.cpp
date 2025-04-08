@@ -167,7 +167,66 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             sizeData[1] = (double)height;
         }
         return; // Done
+     }
+
+    if (cmd == "getInputState") {
+    // Expect: [inputStruct] = getInputState()
+    if (nrhs != 1) mexErrMsgIdAndTxt("Renderer:GetInput:Args", "Usage: [inputStruct] = getInputState()");
+    if (nlhs > 1) mexErrMsgIdAndTxt("Renderer:GetInput:Outputs", "Too many output arguments.");
+
+    // Define the fields for the output struct
+    const char* fieldNames[] = {
+        "MoveForward", "MoveBackward", "RotateLeft", "RotateRight", // Keyboard basic move/rotate
+        "StrafeLeft", "StrafeRight", // Keyboard strafe (example)
+        "Exit", // Keyboard exit request (e.g., Escape key)
+        "MouseX", "MouseY",          // Mouse position
+        "MouseLeft", "MouseRight", "MouseMiddle" // Mouse buttons
+        // Add more fields as needed (e.g., specific action keys like 'Space')
+    };
+    int nfields = sizeof(fieldNames) / sizeof(*fieldNames);
+
+    // Create the output struct
+    plhs[0] = mxCreateStructMatrix(1, 1, nfields, fieldNames);
+    if (plhs[0] == NULL) {
+        mexErrMsgIdAndTxt("Renderer:GetInput:Memory", "Could not create output struct.");
     }
+
+    // --- Poll Raylib Input Functions ---
+
+    // Keyboard Movement/Rotation (WASD + Arrows)
+    bool moveFwd = IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
+    bool moveBwd = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN);
+    bool rotL = IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT);
+    bool rotR = IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT);
+    // Add strafe keys if desired (e.g., Q/E)
+    bool strafeL = IsKeyDown(KEY_Q);
+    bool strafeR = IsKeyDown(KEY_E);
+    // Exit Key
+    bool exitReq = IsKeyDown(KEY_ESCAPE);
+
+    // Mouse
+    Vector2 mousePos = GetMousePosition();
+    bool mouseL = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    bool mouseR = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+    bool mouseM = IsMouseButtonDown(MOUSE_BUTTON_MIDDLE);
+
+    // --- Populate the MATLAB struct ---
+    // Use mxSetFieldByNumber for simplicity, field order must match fieldNames
+    mxSetFieldByNumber(plhs[0], 0, 0, mxCreateLogicalScalar(moveFwd));  // MoveForward
+    mxSetFieldByNumber(plhs[0], 0, 1, mxCreateLogicalScalar(moveBwd));  // MoveBackward
+    mxSetFieldByNumber(plhs[0], 0, 2, mxCreateLogicalScalar(rotL));     // RotateLeft
+    mxSetFieldByNumber(plhs[0], 0, 3, mxCreateLogicalScalar(rotR));     // RotateRight
+    mxSetFieldByNumber(plhs[0], 0, 4, mxCreateLogicalScalar(strafeL));  // StrafeLeft
+    mxSetFieldByNumber(plhs[0], 0, 5, mxCreateLogicalScalar(strafeR));  // StrafeRight
+    mxSetFieldByNumber(plhs[0], 0, 6, mxCreateLogicalScalar(exitReq));  // Exit
+    mxSetFieldByNumber(plhs[0], 0, 7, mxCreateDoubleScalar(mousePos.x));// MouseX
+    mxSetFieldByNumber(plhs[0], 0, 8, mxCreateDoubleScalar(mousePos.y));// MouseY
+    mxSetFieldByNumber(plhs[0], 0, 9, mxCreateLogicalScalar(mouseL));   // MouseLeft
+    mxSetFieldByNumber(plhs[0], 0, 10, mxCreateLogicalScalar(mouseR));  // MouseRight
+    mxSetFieldByNumber(plhs[0], 0, 11, mxCreateLogicalScalar(mouseM));  // MouseMiddle
+
+    return; // Done
+}
 
 
     // If command not recognized
